@@ -12,6 +12,7 @@ h1 {
 button {
   background-color: hsl(215, 80%, 60%);
   border: 0;
+  border-radius: 0.33em;
   box-sizing: border-box;
   color: white;
   cursor: pointer;
