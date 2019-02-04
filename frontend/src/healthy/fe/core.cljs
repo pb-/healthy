@@ -20,20 +20,27 @@
 (defn survey [s]
   [:div
    [:h1 (str
-          (:selected s)
           (get-in s [:survey :template :title])
           " – "
           (:name ((get-in s [:survey :template :dimensions]) 0)))]
    [:div#panel
-   (concat (for [score (range 1 6)]
-             ^{:key score} [:p {:class (str "score s" score)
-                                :on-click (make-select s (dec score))} score])
-           (for [index (range 5)]
-             ^{:key (+ index 10)}
-             [:p.description
-              {:on-click (make-select s index)}
-              (:description ((:options ((get-in s [:survey :template :dimensions]) 0)) index))]))
-   [:button "Continue"]]])
+    (concat (for [index (range 5)]
+              ^{:key index} [:p
+                             {:class (str "score" (when (or (not (:selected s)) (= (:selected s) index)) (str " s" index)))
+                              :on-click (make-select s index)} (inc index)])
+            (for [index (range 5)]
+              ^{:key (+ index 10)}
+              [:div
+               [:p.description
+                {:on-click (make-select s index)}
+                (:description ((:options ((get-in s [:survey :template :dimensions]) 0)) index))]
+               (when (= index (:selected s))
+                 [:div
+                  [:button "Continue"]
+                  [:textarea.comment
+                   {:placeholder "Optional comment"
+                    :on-change #(swap! state assoc :comment (-> % .-target .-value))
+                    :value (:comment s)}]])]))]])
 
 (defn loading-display []
   [:p "Loading..."])
