@@ -5,6 +5,7 @@
             [cljs.core.async :refer [<!]]
             [cljs-http.client :as http]))
 
+(def endpoint "http://localhost:8080")
 (def state (r/atom {:loading true}))
 
 (defn home []
@@ -16,6 +17,17 @@
            (if (= (:selected s) i)
              nil
              i))))
+
+(defn grade [survey-id dimension-id score comment]
+  (go (let [response (<! (http/post
+                           (str endpoint "/api/command")
+                           {:with-credentials? false
+                            :edn-params {:type :dimension-graded
+                                         :user-id "0123401234"
+                                         :survey-id survey-id
+                                         :dimension-id dimension-id
+                                         :score score
+                                         :comment comment}}))])))
 
 (defn survey [s]
   [:div
@@ -29,18 +41,26 @@
                              {:class (str "score" (when (or (not (:selected s)) (= (:selected s) index)) (str " s" index)))
                               :on-click (make-select s index)} (inc index)])
             (for [index (range 5)]
-              ^{:key (+ index 10)}
-              [:div
-               [:p.description
-                {:on-click (make-select s index)}
-                (:description ((:options ((get-in s [:survey :template :dimensions]) 0)) index))]
-               (when (= index (:selected s))
-                 [:div
-                  [:button "Continue"]
-                  [:textarea.comment
-                   {:placeholder "Optional comment"
-                    :on-change #(swap! state assoc :comment (-> % .-target .-value))
-                    :value (:comment s)}]])]))]])
+              (let [dimension ((get-in s [:survey :template :dimensions]) 0)
+                    option ((:options dimension) index)]
+                ^{:key (+ index 10)}
+                [:div
+                 [:p.description
+                  {:on-click (make-select s index)}
+                  (:description option)]
+                 (when (= index (:selected s))
+                   [:div
+                    [:button
+                     {:on-click #(grade
+                                   (:survey-id s)
+                                   (:dimension-id dimension)
+                                   (:score option)
+                                   (:comment s))}
+                     "Continue"]
+                    [:textarea.comment
+                     {:placeholder "Optional comment"
+                      :on-change #(swap! state assoc :comment (-> % .-target .-value))
+                      :value (:comment s)}]])])))]])
 
 (defn loading-display []
   [:p "Loading..."])
@@ -61,7 +81,7 @@
 (defroute "/survey/:id" {:as params}
   (go
     (let [response (<! (http/get
-                         (str "http://localhost:8080/api/query/survey/" (:id params))
+                         (str endpoint "/api/query/survey/" (:id params))
                          {:with-credentials? false}))]
       (swap! state merge
              {:loading false
@@ -70,6 +90,9 @@
               :survey (:body response)}))))
 
 (defroute "*" []
-  (swap! state assoc :loading false))
+  (swap! state assoc :loading false :screen :home))
 
 (secretary/dispatch! (subs js/location.hash 1))
+
+(set! (.-onhashchange js/window)
+      (fn [_] (secretary/dispatch! (subs js/location.hash 1))))

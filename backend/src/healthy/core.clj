@@ -2,7 +2,7 @@
   [:require
    [org.httpkit.server :as kit]
    [clojure.string :refer [join]]
-   [compojure.core :refer [defroutes GET POST context]]
+   [compojure.core :refer [defroutes GET POST OPTIONS context]]
    [compojure.route :as route]
    [ring.util.request :refer [body-string content-length]]
    [clojure.edn :as edn]
@@ -35,7 +35,8 @@
 
 (def headers
   {"Content-Type" "application/edn" 
-   "Access-Control-Allow-Origin" "*"})
+   "Access-Control-Allow-Origin" "*"
+   "Access-Control-Allow-Headers" "Content-Type"})
 
 (defn load-state []
   (with-open [reader (clojure.java.io/reader storage-file)]
@@ -72,7 +73,7 @@
     (if (s/valid? ::event event)
       (if-let [error (state/error (:state request) event)]
         (respond-error error)
-        (do (store-event! event) {:status 201}))
+        (do (store-event! event) {:status 201 :headers headers}))
       (respond-error (s/explain-str ::event event)))))
 
 (defroutes routes
@@ -81,6 +82,7 @@
                     (GET "/survey/:survey-id" [survey-id] handle-survey)
                     (GET "/dump" [] dump))
            (context "/command" []
+                    (OPTIONS "/" [] {:status 200 :headers headers})
                     (POST "/" [] handle-event)))
   (route/not-found "not here"))
 
