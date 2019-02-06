@@ -91,3 +91,13 @@ textarea.comment {
   text-align: justify;
   text-justify: inter-word;
 }
+
+div.center {
+  margin-top: 30vh;
+  text-align: center;
+}
+
+.emoji {
+  font-size: 100px;
+  margin: 0.3em;
+}
