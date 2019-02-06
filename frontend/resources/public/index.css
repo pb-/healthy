@@ -9,21 +9,38 @@ h1 {
   text-align: center;
 }
 
-button {
-  background-color: hsl(215, 80%, 60%);
+input, button {
   border: 0;
   border-radius: 0.33em;
   box-sizing: border-box;
-  color: white;
-  cursor: pointer;
-  display: block;
   font: inherit;
   padding: 0.66em;
+}
+
+input {
+  border: 1px solid black;
+}
+
+button {
+  border: 1px solid hsl(215, 80%, 60%);
+  background-color: hsl(215, 80%, 60%);
+  color: white;
+  cursor: pointer;
+}
+
+button.fullwidth {
+  display: block;
   width: 100%;
 }
 
 button:hover {
   background-color: hsl(215, 100%, 45%);
+}
+
+button:disabled {
+  border: 1px solid hsl(0, 0%, 70%);
+  background-color: hsl(0, 0%, 95%);
+  color: hsl(0, 0%, 70%);
 }
 
 textarea {
@@ -100,4 +117,8 @@ div.center {
 .emoji {
   font-size: 100px;
   margin: 0.3em;
+}
+
+.register {
+  text-align: center;
 }

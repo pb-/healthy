@@ -8,6 +8,11 @@
 (def endpoint "http://localhost:8080")
 (defonce state (r/atom {:loading true}))
 
+(defn make-id []
+  (->> #(rand-nth "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz")
+       (repeatedly 10)
+       (apply str)))
+
 (defn home []
   [:p "Welcome to agile health check!"])
 
@@ -18,7 +23,7 @@
              nil
              i))))
 
-(defn grade [survey-id dimension-id score comment]
+(defn grade [survey-id dimension-id score grade-comment]
   (go (let [response (<! (http/post
                            (str endpoint "/api/command")
                            {:with-credentials? false
@@ -27,7 +32,7 @@
                                          :survey-id survey-id
                                          :dimension-id dimension-id
                                          :score score
-                                         :comment comment}}))]
+                                         :comment grade-comment}}))]
         (if (= (:status response) 201)
           (swap! state update-in [:dimension] inc)
           (swap! state assoc :error? true)))))
@@ -59,7 +64,7 @@
                   (:description option)]
                  (when (= index (:selected s))
                    [:div
-                    [:button
+                    [:button.fullwidth
                      {:on-click #(grade
                                    (:survey-id s)
                                    (:dimension-id dimension)
@@ -71,9 +76,28 @@
                       :on-change #(swap! state assoc :comment (-> % .-target .-value))
                       :value (:comment s)}]])])))]])
 
+(defn register []
+  ;; TODO - register here
+  (swap! state assoc :user-id (make-id)))
+
+(defn register-form [s]
+  [:div.register
+   [:h1 (get-in s [:survey :template :title])]
+   [:input {:type "text"
+            :placeholder "Your name"
+            :auto-focus true
+            :on-change #(swap! state assoc :user-name (-> % .-target .-value))
+            :on-key-press #(when (and (not-empty (:user-name s))
+                                      (= 13 (.-charCode %))) (register))}] " "
+   [:button {:disabled (empty? (:user-name s))
+             :on-click register}
+    "Let's go"]])
+
 (defn survey [s]
   (if (< (:dimension s) (count (-> s :survey :template :dimensions)))
-    (survey-step s)
+    (if (:user-id s)
+      (survey-step s)
+      (register-form s))
     (all-done s)))
 
 (defn loading-display []
