@@ -3,7 +3,8 @@
   (:require [reagent.core :as r]
             [secretary.core :as secretary :refer-macros [defroute]]
             [cljs.core.async :refer [<!]]
-            [cljs-http.client :as http]))
+            [cljs-http.client :as http]
+            [goog.functions :refer [debounce]]))
 
 (def endpoint "http://localhost:8080")
 (defonce state (r/atom {:loading true}))
@@ -88,12 +89,17 @@
         (swap! state assoc :user-id user-id))))
 
 (defn check-name [s user-name]
+  (go (let [response (<! (http/get
+                           (str endpoint "/api/query/survey/" (:survey-id s) "/user/"
+                                (js/encodeURIComponent user-name))
+                           {:with-credentials? false}))]
+        (swap! state assoc :name-available? (= (:status response) 400)))))
+
+(def check-name' (debounce check-name 333))
+
+(defn name-changed [s user-name]
   (do (swap! state assoc :user-name user-name)
-      (go (let [response (<! (http/get
-                               (str endpoint "/api/query/survey/" (:survey-id s) "/user/"
-                                    (js/encodeURIComponent user-name))
-                               {:with-credentials? false}))]
-            (swap! state assoc :name-available? (= (:status response) 400))))))
+      (check-name' s user-name)))
 
 (defn can-register? [s]
   (and (:name-available? s)
@@ -103,9 +109,10 @@
   [:div.register
    [:h1 (get-in s [:survey :template :title])]
    [:input {:type "text"
+            :value (:user-name s)
             :placeholder "Your name"
             :auto-focus true
-            :on-change #(->> % .-target .-value (check-name s))
+            :on-change #(->> % .-target .-value (name-changed s))
             :on-key-press #(when (and (can-register? s)
                                       (= 13 (.-charCode %))) (register s))}] " "
    [:button {:disabled (not (can-register? s))
