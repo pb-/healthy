@@ -68,6 +68,12 @@
     (respond-ok {:template (state/find-template-id (:state request) (:template-id survey))})
     (respond-error "not found")))
 
+(defn handle-check-user [request]
+  (let [{:keys [survey-id user-name]} (:params request)]
+    (if (state/has-graded? (:state request) survey-id user-name)
+      (respond-ok {})
+      (route/not-found "not graded"))))
+
 (defn handle-event [request]
   (let [event (:edn-params request)]
     (if (s/valid? ::event event)
@@ -80,6 +86,7 @@
   (context "/api" []
            (context "/query" []
                     (GET "/survey/:survey-id" [survey-id] handle-survey)
+                    (GET "/survey/:survey-id/user/:user-name" [survey-id user-name] handle-check-user)
                     (GET "/dump" [] dump))
            (context "/command" []
                     (OPTIONS "/" [] {:status 200 :headers headers})

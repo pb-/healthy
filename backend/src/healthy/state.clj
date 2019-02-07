@@ -1,4 +1,7 @@
-(ns healthy.state)
+(ns healthy.state
+  [:require
+   [clojure.set :as s]])
+
 (def initial
   {:surveys []
    :users []
@@ -22,9 +25,17 @@
                                          :score 5
                                          :description "Team has a self designed workflow visualisation and information is continuously radiated to the office. Team almost always completes estimated work on time. Team has understanding and deep experience of prototpying, A/B tests, MVPs, and adopt it in all scenarios. Team starts every effort by framing the problem and impact in an hypothesis, leveraging past learnings, iterating and documenting it for everyone to see. Team is able to adapt and re-focus quickly if priorities change."}]}]}]})
 
+(defn normalize [user-name]
+  (->> user-name
+       .trim
+       .toLowerCase))
+
 ; will need some abstraction here
 (defn find-user-id [state id]
   (first (filter #(= id (:user-id %)) (:users state))))
+
+(defn find-user-names [state user-name]
+  (filter #(= (normalize user-name) (normalize (:user-name %))) (:users state)))
 
 (defn find-template-id [state id]
   (first (filter #(= id (:template-id %)) (:templates state))))
@@ -34,6 +45,19 @@
 
 (defn find-survey-admin-id [state id]
   (first (filter #(= id (:admin-id %)) (:surveys state))))
+
+(defn has-graded? [state survey-id user-name]
+  (let [survey (find-survey-id state survey-id)
+        user-ids (map :user-id (find-user-names state user-name))]
+    (->> survey
+         :grades
+         vals
+         (map keys)
+         flatten
+         set
+         (s/intersection user-ids)
+         empty?
+         not)))
 
 (defmulti ^:private update-unsafe (fn [_ event] (:type event)))
 
@@ -54,7 +78,8 @@
 (defmethod update-unsafe :survey-created [state event]
   (update state :surveys
           #(conj % (assoc (select-keys event [:survey-id :template-id :admin-id])
-                          :created-at (:time event)))))
+                          :created-at (:time event)
+                          :grades {}))))
 
 (defmethod error :user-registered [state event]
   (if (find-user-id state (:user-id event))
@@ -76,8 +101,15 @@
         "no such dimension")
       "no such survey")))
 
-(comment (defmethod update-unsafe :dimension-graded [state event]
-  state))
+(defmethod update-unsafe :dimension-graded [state event]
+  (assoc state :surveys
+         (mapv (fn [survey]
+                 (if (= (:survey-id survey) (:survey-id event))
+                   (assoc-in survey
+                             [:grades (:dimension-id event) (:user-id event)]
+                             (select-keys event [:score :comment]))
+                   survey))
+               (:surveys state))))
 
 (defn update-state [state event]
   (if (error state event)
