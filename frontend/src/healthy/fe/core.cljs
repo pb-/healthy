@@ -23,12 +23,12 @@
              nil
              i))))
 
-(defn grade [survey-id dimension-id score grade-comment]
+(defn grade [survey-id user-id dimension-id score grade-comment]
   (go (let [response (<! (http/post
                            (str endpoint "/api/command")
                            {:with-credentials? false
                             :edn-params {:type :dimension-graded
-                                         :user-id "0123401234"
+                                         :user-id user-id
                                          :survey-id survey-id
                                          :dimension-id dimension-id
                                          :score score
@@ -67,6 +67,7 @@
                     [:button.fullwidth
                      {:on-click #(grade
                                    (:survey-id s)
+                                   (:user-id s)
                                    (:dimension-id dimension)
                                    (:score option)
                                    (:comment s))}
@@ -76,9 +77,27 @@
                       :on-change #(swap! state assoc :comment (-> % .-target .-value))
                       :value (:comment s)}]])])))]])
 
-(defn register []
-  ;; TODO - register here
-  (swap! state assoc :user-id (make-id)))
+(defn register [s]
+  (go (let [user-id (make-id)
+            response (<! (http/post (str endpoint "/api/command")
+                                    {:with-credentials? false
+                                     :edn-params {:type :user-registered
+                                                  :user-id user-id
+                                                  :user-name (:user-name s)}}))]
+
+        (swap! state assoc :user-id user-id))))
+
+(defn check-name [s user-name]
+  (do (swap! state assoc :user-name user-name)
+      (go (let [response (<! (http/get
+                               (str endpoint "/api/query/survey/" (:survey-id s) "/user/"
+                                    (js/encodeURIComponent user-name))
+                               {:with-credentials? false}))]
+            (swap! state assoc :name-available? (= (:status response) 400))))))
+
+(defn can-register? [s]
+  (and (:name-available? s)
+       (not-empty (:user-name s))))
 
 (defn register-form [s]
   [:div.register
@@ -86,11 +105,11 @@
    [:input {:type "text"
             :placeholder "Your name"
             :auto-focus true
-            :on-change #(swap! state assoc :user-name (-> % .-target .-value))
-            :on-key-press #(when (and (not-empty (:user-name s))
-                                      (= 13 (.-charCode %))) (register))}] " "
-   [:button {:disabled (empty? (:user-name s))
-             :on-click register}
+            :on-change #(->> % .-target .-value (check-name s))
+            :on-key-press #(when (and (can-register? s)
+                                      (= 13 (.-charCode %))) (register s))}] " "
+   [:button {:disabled (not (can-register? s))
+             :on-click #(register s)}
     "Let's go"]])
 
 (defn survey [s]
