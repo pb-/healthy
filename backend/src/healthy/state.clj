@@ -48,7 +48,7 @@
 
 (defn has-graded? [state survey-id user-name]
   (let [survey (find-survey-id state survey-id)
-        user-ids (map :user-id (find-user-names state user-name))]
+        user-ids (set (map :user-id (find-user-names state user-name)))]
     (->> survey
          :grades
          vals

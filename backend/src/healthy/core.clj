@@ -72,7 +72,7 @@
   (let [{:keys [survey-id user-name]} (:params request)]
     (if (state/has-graded? (:state request) survey-id user-name)
       (respond-ok {})
-      (route/not-found "not graded"))))
+      (respond-error "not graded"))))
 
 (defn handle-event [request]
   (let [event (:edn-params request)]
