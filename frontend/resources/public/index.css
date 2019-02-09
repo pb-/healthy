@@ -122,3 +122,7 @@ div.center {
 .register {
   text-align: center;
 }
+
+.smaller {
+  font-size: smaller;
+}

@@ -88,36 +88,42 @@
 
         (swap! state assoc :user-id user-id))))
 
-(defn check-name [s user-name]
+(defn check-name [s user-name submit?]
   (go (let [response (<! (http/get
                            (str endpoint "/api/query/survey/" (:survey-id s) "/user/"
                                 (js/encodeURIComponent user-name))
-                           {:with-credentials? false}))]
-        (swap! state assoc :name-available? (= (:status response) 400)))))
+                           {:with-credentials? false}))
+            available? (-> response :body :graded? not)]
+        (do
+          (swap! state assoc :name-available? available?)
+          (when (and submit? available?) (register s))))))
 
 (def check-name' (debounce check-name 333))
 
 (defn name-changed [s user-name]
-  (do (swap! state assoc :user-name user-name)
-      (check-name' s user-name)))
+  (do (swap! state assoc :user-name user-name :name-available? true)
+      (check-name' s user-name false)))
 
 (defn can-register? [s]
   (and (:name-available? s)
        (not-empty (:user-name s))))
 
 (defn register-form [s]
-  [:div.register
-   [:h1 (get-in s [:survey :template :title])]
-   [:input {:type "text"
-            :value (:user-name s)
-            :placeholder "Your name"
-            :auto-focus true
-            :on-change #(->> % .-target .-value (name-changed s))
-            :on-key-press #(when (and (can-register? s)
-                                      (= 13 (.-charCode %))) (register s))}] " "
-   [:button {:disabled (not (can-register? s))
-             :on-click #(register s)}
-    "Let's go"]])
+  (let [submit #(check-name s (:user-name s) true)]
+    [:div.register
+     [:h1 (get-in s [:survey :template :title])]
+     [:input {:type "text"
+              :value (:user-name s)
+              :placeholder "Your name"
+              :auto-focus true
+              :on-change #(->> % .-target .-value (name-changed s))
+              :on-key-press #(when (and (can-register? s)
+                                        (= 13 (.-charCode %))) (submit))}] " "
+     [:button {:disabled (not (can-register? s))
+               :on-click submit}
+      "Let's go"]
+     (when (not (:name-available? s true))
+       [:p.smaller "That name is already in use."])]))
 
 (defn survey [s]
   (if (< (:dimension s) (count (-> s :survey :template :dimensions)))
