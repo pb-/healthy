@@ -69,10 +69,11 @@
     (respond-error "not found")))
 
 (defn handle-check-user [request]
-  (let [{:keys [survey-id user-name]} (:params request)]
-    (if (state/has-graded? (:state request) survey-id user-name)
-      (respond-ok {})
-      (respond-error "not graded"))))
+  (let [{:keys [survey-id user-name]} (:params request)
+        exists? (state/find-survey-id (:state request) survey-id)]
+    (if exists?
+      (respond-ok {:graded? (state/has-graded? (:state request) survey-id user-name)})
+      (route/not-found "no such survey"))))
 
 (defn handle-event [request]
   (let [event (:edn-params request)]
