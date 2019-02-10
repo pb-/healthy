@@ -37,7 +37,7 @@
                                          :score score
                                          :comment grade-comment}}))]
         (if (= (:status response) 201)
-          (swap! state update-in [:dimension] inc)
+          (swap! state #(-> % (update-in [:dimension] inc) (dissoc :comment :selected)))
           (swap! state assoc :error? true)))))
 
 (defn all-done [s]
@@ -58,7 +58,7 @@
                              {:class (str "score" (when (or (not (:selected s)) (= (:selected s) index)) (str " s" index)))
                               :on-click (make-select s index)} (inc index)])
             (for [index (range 5)]
-              (let [dimension ((get-in s [:survey :template :dimensions]) 0)
+              (let [dimension ((get-in s [:survey :template :dimensions]) (:dimension s))
                     option ((:options dimension) index)]
                 ^{:key (+ index 10)}
                 [:div
@@ -153,7 +153,7 @@
         [:h2 "Respondents"]
         [:table.respondents
          [:tbody
-          (for [respondent status]
+          (for [respondent (sort-by #(.toLowerCase (:user-name %)) status)]
             ^{:key (:user-name respondent)}
             [:tr
              [:td (:user-name respondent)]
