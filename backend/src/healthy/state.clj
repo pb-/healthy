@@ -40,24 +40,36 @@
 (defn find-template-id [state id]
   (first (filter #(= id (:template-id %)) (:templates state))))
 
+(defn find-admin-id [state id]
+  (first (filter #(= id (:admin-id %)) (:surveys state))))
+
 (defn find-survey-id [state id]
   (first (filter #(= id (:survey-id %)) (:surveys state))))
 
 (defn find-survey-admin-id [state id]
   (first (filter #(= id (:admin-id %)) (:surveys state))))
 
+(defn survey-user-ids [survey]
+  (->> survey :grades vals (map keys) flatten))
+
 (defn has-graded? [state survey-id user-name]
   (let [survey (find-survey-id state survey-id)
         user-ids (set (map :user-id (find-user-names state user-name)))]
     (->> survey
-         :grades
-         vals
-         (map keys)
-         flatten
+         survey-user-ids
          set
          (s/intersection user-ids)
          empty?
          not)))
+
+(defn status [state survey]
+  (let [dims (->> (:template-id survey) (find-template-id state) :dimensions count)]
+    (->> survey
+         user-ids
+         (reduce (fn [counts, id] (update counts id #(inc (or % 0)))) {})
+         (map (fn [[id n]]
+                {:user-name (:user-name (find-user-id state id))
+                 :finished? (= n dims)})))))
 
 (defmulti ^:private update-unsafe (fn [_ event] (:type event)))
 
@@ -79,7 +91,8 @@
   (update state :surveys
           #(conj % (assoc (select-keys event [:survey-id :template-id :admin-id])
                           :created-at (:time event)
-                          :grades {}))))
+                          :grades {}
+                          :ended? false))))
 
 (defmethod error :user-registered [state event]
   (if (find-user-id state (:user-id event))

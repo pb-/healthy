@@ -63,10 +63,17 @@
 (defn dump [request]
   (respond-ok (:state request)))
 
+(defn handle-admin [request]
+  (if-let [survey (state/find-admin-id (:state request) (get-in request [:params :admin-id]))]
+    (respond-ok
+     {:ended? (:ended? survey)
+      :status (state/status (:state request) survey)})
+    (route/not-found "not found")))
+
 (defn handle-survey [request]
   (if-let [survey (state/find-survey-id (:state request) (get-in request [:params :survey-id]))]
     (respond-ok {:template (state/find-template-id (:state request) (:template-id survey))})
-    (respond-error "not found")))
+    (route/not-found "not found")))
 
 (defn handle-check-user [request]
   (let [{:keys [survey-id user-name]} (:params request)
@@ -86,6 +93,7 @@
 (defroutes routes
   (context "/api" []
            (context "/query" []
+                    (GET "/admin/:admin-id" [admin-id] handle-admin)
                     (GET "/survey/:survey-id" [survey-id] handle-survey)
                     (GET "/survey/:survey-id/user/:user-name" [survey-id user-name] handle-check-user)
                     (GET "/dump" [] dump))
