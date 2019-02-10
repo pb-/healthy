@@ -6,8 +6,10 @@
             [cljs-http.client :as http]
             [goog.functions :refer [debounce]]))
 
-(def endpoint "http://localhost:8080")
+(def endpoint (str js/document.location.protocol "//" js/document.location.hostname ":8080"))
+(def address (str js/document.location.protocol "//" js/document.location.host "/"))
 (defonce state (r/atom {:loading true}))
+(secretary/set-config! :prefix "#")
 
 (defn make-id []
   (->> #(rand-nth "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz")
@@ -132,23 +134,30 @@
       (register-form s))
     (all-done s)))
 
+(declare survey-path)
+
 (defn admin-progress [s]
   (let [{:keys [status survey-id]} (:admin s)]
-    [:div
+    [:div.progress
      [:h1 "Survey in progress"]
-     [:p "Public link: " [:span survey-id]]
-     [:p "This survey is still in progress. If you close it, no further responses are possible."]
-     [:button "Close survey"]
+     [:p.label "Public survey link for participants:"]
+     [:p.link
+      (let [url (str address (survey-path {:id survey-id}))]
+        [:a {:href url} url])]
+     [:p.label "Secret admin link for you (don't lose it!):"]
+     [:p.link.adminlink js/document.location.href]
+     [:p "This survey is in progress. Once you close it, no further responses are accepted."]
+     [:button.fullwidth "Close survey"]
      (when (not-empty status)
        [:div
         [:h2 "Respondents"]
-        [:table
+        [:table.respondents
          [:tbody
           (for [respondent status]
             ^{:key (:user-name respondent)}
             [:tr
              [:td (:user-name respondent)]
-             [:td (if (:finished? respondent) "finished" "started")]])]]])]))
+             [:td (if (:finished? respondent) "finished 🏁" "started ⌛")]])]]])]))
 
 (defn admin [s]
   (if (get-in s [:admin :ended?])
@@ -188,7 +197,7 @@
                 :admin (:body response)})
         (swap! state assoc :error? true)))))
 
-(defroute "/survey/:id" {:as params}
+(defroute survey-path "/survey/:id" {:as params}
   (go
     (let [response (<! (http/get
                          (str endpoint "/api/query/survey/" (:id params))

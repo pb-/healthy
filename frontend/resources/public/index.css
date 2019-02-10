@@ -126,3 +126,34 @@ div.center {
 .smaller {
   font-size: smaller;
 }
+
+.progress {
+  width: 25em;
+  margin: auto;
+}
+
+.respondents {
+  width: 100%;
+}
+
+p.label {
+  margin-bottom: 0.2em;
+}
+
+.link {
+  background-color: hsl(0, 0%, 95%);
+  border: 1px solid hsl(0, 0%, 70%);
+  font-size: smaller;
+  margin: 0;
+  padding: 1em;
+}
+
+.link a, .link a:active, .link a:hover {
+  color: black;
+}
+
+.adminlink {
+  background-color: hsl(0, 80%, 90%);
+  border: 1px solid hsl(8, 50%,50%);
+  color: hsl(8, 80%, 30%);
+}
