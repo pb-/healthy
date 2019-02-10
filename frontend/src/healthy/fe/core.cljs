@@ -158,6 +158,7 @@
       (if (= (:status response) 200)
         (swap! state merge
                {:loading false
+                :error? false
                 :screen :take-survey
                 :dimension 0
                 :survey-id (:id params)
@@ -165,7 +166,7 @@
         (swap! state assoc :error? true)))))
 
 (defroute "*" []
-  (swap! state assoc :loading false :screen :home))
+  (swap! state assoc :loading false :error? false :screen :home))
 
 (defn main []
   (r/render [root] (.getElementById js/document "app")))
