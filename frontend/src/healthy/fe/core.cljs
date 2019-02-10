@@ -132,6 +132,29 @@
       (register-form s))
     (all-done s)))
 
+(defn admin-progress [s]
+  (let [{:keys [status survey-id]} (:admin s)]
+    [:div
+     [:h1 "Survey in progress"]
+     [:p "Public link: " [:span survey-id]]
+     [:p "This survey is still in progress. If you close it, no further responses are possible."]
+     [:button "Close survey"]
+     (when (not-empty status)
+       [:div
+        [:h2 "Respondents"]
+        [:table
+         [:tbody
+          (for [respondent status]
+            ^{:key (:user-name respondent)}
+            [:tr
+             [:td (:user-name respondent)]
+             [:td (if (:finished? respondent) "finished" "started")]])]]])]))
+
+(defn admin [s]
+  (if (get-in s [:admin :ended?])
+    nil
+    (admin-progress s)))
+
 (defn loading-display []
   [:p "Loading..."])
 
@@ -148,7 +171,22 @@
       (:loading s) (loading-display)
       :else (case (:screen s)
               :take-survey (survey s)
+              :admin (admin s)
               (home)))))
+
+(defroute "/admin/:id" {:as params}
+  (go
+    (let [response (<! (http/get
+                         (str endpoint "/api/query/admin/" (:id params))
+                         {:with-credentials? false}))]
+      (if (= (:status response) 200)
+        (swap! state merge
+               {:loading false
+                :error? false
+                :screen :admin
+                :admin-id (:id params)
+                :admin (:body response)})
+        (swap! state assoc :error? true)))))
 
 (defroute "/survey/:id" {:as params}
   (go

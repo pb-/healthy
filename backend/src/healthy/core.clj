@@ -67,6 +67,7 @@
   (if-let [survey (state/find-admin-id (:state request) (get-in request [:params :admin-id]))]
     (respond-ok
      {:ended? (:ended? survey)
+      :survey-id (:survey-id survey)
       :status (state/status (:state request) survey)})
     (route/not-found "not found")))
 
