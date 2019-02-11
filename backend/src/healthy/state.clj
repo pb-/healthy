@@ -94,6 +94,20 @@
                           :grades {}
                           :ended? false))))
 
+(defmethod error :survey-ended [state event]
+  (if (find-admin-id state (:admin-id event))
+    nil
+    "no such survey"))
+
+(defmethod update-unsafe :survey-ended [state event]
+  (let [survey-id (->> event :admin-id (find-admin-id state) :survey-id)]
+    (update state :surveys
+            (partial
+              mapv (fn [survey]
+                     (if (= (:survey-id survey) survey-id)
+                       (assoc survey :ended? true)
+                       survey))))))
+
 (defmethod error :user-registered [state event]
   (if (find-user-id state (:user-id event))
     "user already exists"

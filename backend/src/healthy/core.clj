@@ -13,6 +13,8 @@
 (defmulti event-type :type)
 (defmethod event-type :survey-created [_]
   (s/keys :req-un [::type ::survey-id ::template-id ::admin-id]))
+(defmethod event-type :survey-ended [_]
+  (s/keys :req-un [::type ::admin-id]))
 (defmethod event-type :user-registered [_]
   (s/keys :req-un [::type ::user-id ::user-name]))
 (defmethod event-type :dimension-graded [_]
@@ -73,7 +75,8 @@
 
 (defn handle-survey [request]
   (if-let [survey (state/find-survey-id (:state request) (get-in request [:params :survey-id]))]
-    (respond-ok {:template (state/find-template-id (:state request) (:template-id survey))})
+    (respond-ok {:template (state/find-template-id (:state request) (:template-id survey))
+                 :ended? (:ended? survey)})
     (route/not-found "not found")))
 
 (defn handle-check-user [request]
