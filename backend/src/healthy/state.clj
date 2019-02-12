@@ -122,10 +122,12 @@
   (if (not (find-user-id state (:user-id event)))
     "no such user"
     (if-let [survey (find-survey-id state (:survey-id event))]
-      (if (some #(= (:dimension-id event) (:dimension-id %))
-                (:dimensions (find-template-id state (:template-id survey))))
-        nil
-        "no such dimension")
+      (if (:ended? survey)
+        "survey has ended"
+        (if (some #(= (:dimension-id event) (:dimension-id %))
+                  (:dimensions (find-template-id state (:template-id survey))))
+          nil
+          "no such dimension"))
       "no such survey")))
 
 (defmethod update-unsafe :dimension-graded [state event]
