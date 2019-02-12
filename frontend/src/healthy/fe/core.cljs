@@ -40,6 +40,12 @@
           (swap! state #(-> % (update-in [:dimension] inc) (dissoc :comment :selected)))
           (swap! state assoc :error? true)))))
 
+(defn survey-ended [s]
+  [:div.center
+   [:h1 "Survey has ended"]
+   [:p.emoji "⏳"]
+   [:p "Stay tuned for results!"]])
+
 (defn all-done [s]
   [:div.center
    [:h1 "All done!"]
@@ -179,6 +185,7 @@
       (:error? s) (error)
       (:loading s) (loading-display)
       :else (case (:screen s)
+              :ended (survey-ended s)
               :take-survey (survey s)
               :admin (admin s)
               (home)))))
@@ -206,7 +213,7 @@
         (swap! state merge
                {:loading false
                 :error? false
-                :screen :take-survey
+                :screen (if (-> response :body :ended?) :ended :take-survey)
                 :dimension 0
                 :survey-id (:id params)
                 :survey (:body response)})
