@@ -140,6 +140,18 @@
       (register-form s))
     (all-done s)))
 
+(declare admin-path)
+
+(defn close-survey [s]
+  (go
+    (let [response (<! (http/post (str endpoint "/api/command")
+                                    {:with-credentials? false
+                                     :edn-params {:type :survey-ended
+                                                  :admin-id (:admin-id s)}}))]
+      (if (= (:status response) 201)
+        (secretary/dispatch! (admin-path {:id (:admin-id s)}))
+        (swap! state :error? true)))))
+
 (declare survey-path)
 
 (defn admin-progress [s]
@@ -153,7 +165,7 @@
      [:p.label "Secret admin link for you (don't lose it!):"]
      [:p.link.adminlink js/document.location.href]
      [:p "This survey is in progress. Once you close it, no further responses are accepted."]
-     [:button.fullwidth "Close survey"]
+     [:button.fullwidth {:on-click #(close-survey s)} "Close survey"]
      (when (not-empty status)
        [:div
         [:h2 "Respondents"]
@@ -190,7 +202,7 @@
               :admin (admin s)
               (home)))))
 
-(defroute "/admin/:id" {:as params}
+(defroute admin-path "/admin/:id" {:as params}
   (go
     (let [response (<! (http/get
                          (str endpoint "/api/query/admin/" (:id params))
