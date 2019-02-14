@@ -65,7 +65,7 @@
 (defn status [state survey]
   (let [dims (->> (:template-id survey) (find-template-id state) :dimensions count)]
     (->> survey
-         user-ids
+         survey-user-ids
          (reduce (fn [counts, id] (update counts id #(inc (or % 0)))) {})
          (map (fn [[id n]]
                 {:user-name (:user-name (find-user-id state id))
