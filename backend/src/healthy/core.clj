@@ -66,17 +66,13 @@
   (respond-ok (:state request)))
 
 (defn handle-admin [request]
-  (if-let [survey (state/find-admin-id (:state request) (get-in request [:params :admin-id]))]
-    (respond-ok
-     {:ended? (:ended? survey)
-      :survey-id (:survey-id survey)
-      :status (state/status (:state request) survey)})
+  (if-let [survey (state/get-admin (:state request) (get-in request [:params :admin-id]))]
+    (respond-ok survey)
     (route/not-found "not found")))
 
 (defn handle-survey [request]
-  (if-let [survey (state/find-survey-id (:state request) (get-in request [:params :survey-id]))]
-    (respond-ok {:template (state/find-template-id (:state request) (:template-id survey))
-                 :ended? (:ended? survey)})
+  (if-let [survey (state/get-survey (:state request) (get-in request [:params :survey-id]))]
+    (respond-ok survey)
     (route/not-found "not found")))
 
 (defn handle-check-user [request]

@@ -71,6 +71,27 @@
                 {:user-name (:user-name (find-user-id state id))
                  :finished? (= n dims)})))))
 
+(defn get-survey [state survey-id]
+  (if-let [survey (find-survey-id state survey-id)]
+    {:template (find-template-id state (:template-id survey))
+     :ended? (:ended? survey)}))
+
+(defn resolve-grades [state grades]
+  (into
+    {} (for [[dimension-id users] grades]
+         [dimension-id
+          (group-by :score
+                    (map (fn [[user-id grade]]
+                           (assoc grade :user-name (:user-name (find-user-id state user-id))))
+                         users))])))
+
+(defn get-admin [state admin-id]
+  (if-let [survey (find-admin-id state admin-id)]
+    (if (:ended? survey)
+      (assoc (get-survey state (:survey-id survey))
+             :grades (resolve-grades state (:grades survey)))
+      (select-keys survey [:survey-id :ended?]))))
+
 (defmulti ^:private update-unsafe (fn [_ event] (:type event)))
 
 (defmulti error (fn [_ event] (:type event)))
