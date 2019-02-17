@@ -183,9 +183,10 @@
         len (count sorted)
         middle (quot len 2)
         middle-1 (dec middle)]
-    (if (odd? len)
-      #{(nth sorted middle)}
-      #{(nth sorted middle) (nth sorted middle-1)})))
+    (cond
+      (empty? sorted) #{}
+      (odd? len) #{(nth sorted middle)}
+      :else #{(nth sorted middle) (nth sorted middle-1)})))
 
 (defn admin-results [s]
   [:div
