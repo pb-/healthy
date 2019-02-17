@@ -205,7 +205,12 @@
               (for [user (get scores score)]
                 [:div.user (:user-name user) " "])])
            (for [option (:options dimension)]
-             [:p.description (:description option)]))]]))])
+             [:div
+              [:p.description (:description option)]
+              (for [{:keys [user-name comment]}
+                    (get scores (:score option))
+                    :when (seq comment)]
+                [:p.comment [:strong user-name] " " comment])]))]]))])
 
 (defn admin [s]
   (if (get-in s [:admin :ended?])

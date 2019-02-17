@@ -168,3 +168,8 @@ p.label {
   color: hsl(215, 80%, 60%);
   display: inline-block;
 }
+
+p.comment {
+  color: hsl(215, 80%, 60%);
+  margin: 0.6em;
+}
