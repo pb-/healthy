@@ -90,7 +90,8 @@
     (if (:ended? survey)
       (assoc (get-survey state (:survey-id survey))
              :grades (resolve-grades state (:grades survey)))
-      (select-keys survey [:survey-id :ended?]))))
+      (assoc (select-keys survey [:survey-id :ended?])
+             :status (status state survey)))))
 
 (defmulti ^:private update-unsafe (fn [_ event] (:type event)))
 
