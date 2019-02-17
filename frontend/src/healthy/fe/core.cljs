@@ -6,9 +6,11 @@
             [cljs-http.client :as http]
             [goog.functions :refer [debounce]]))
 
+(declare admin-path survey-path)
 (def endpoint (str js/document.location.protocol "//" js/document.location.hostname ":8080"))
 (def address (str js/document.location.protocol "//" js/document.location.host "/"))
 (defonce state (r/atom {:loading true}))
+
 (secretary/set-config! :prefix "#")
 
 (defn make-id []
@@ -16,8 +18,25 @@
        (repeatedly 10)
        (apply str)))
 
+(defn create-survey []
+  (go
+    (let [survey-id (make-id)
+          admin-id (make-id)
+          response (<! (http/post (str endpoint "/api/command")
+                                    {:with-credentials? false
+                                     :edn-params {:type :survey-created
+                                                  :survey-id survey-id
+                                                  :admin-id admin-id
+                                                  :template-id "8H1GxragdS"}}))]
+      (if (= (:status response) 201)
+        (secretary/dispatch! (admin-path {:id admin-id}))
+        (swap! state assoc :error? true)))))
+
 (defn home []
-  [:p "Welcome to agile health check!"])
+  [:div.narrow
+   [:h1 "Hello there"]
+   [:p "Click the button below to create a new health check."]
+   [:button.fullwidth {:on-click create-survey} "Create health check"]])
 
 (defn make-select [s i]
   (fn []
@@ -141,8 +160,6 @@
       (register-form s))
     (all-done s)))
 
-(declare admin-path)
-
 (defn close-survey [s]
   (go
     (let [response (<! (http/post (str endpoint "/api/command")
@@ -151,23 +168,21 @@
                                                   :admin-id (:admin-id s)}}))]
       (if (= (:status response) 201)
         (secretary/dispatch! (admin-path {:id (:admin-id s)}))
-        (swap! state :error? true)))))
-
-(declare survey-path)
+        (swap! state assoc :error? true)))))
 
 (defn sort-users [users]
   (sort-by #(.toLowerCase (:user-name %)) users))
 
 (defn admin-progress [s]
   (let [{:keys [status survey-id]} (:admin s)]
-    [:div.progress
-     [:h1 "Survey in progress"]
+    [:div.narrow
+     [:h1 "Health check in progress"]
      [:p.label "Public survey link for participants:"]
      [:p.link
       (let [url (str address (survey-path {:id survey-id}))]
         [:a {:href url} url])]
      [:p.label "Secret admin link for you (don't lose it!):"]
-     [:p.link.adminlink js/document.location.href]
+     [:p.link.adminlink (str address (admin-path {:id (:admin-id s)}))]
      [:p "This survey is in progress. Once you close it, no further responses are accepted."]
      [:button.fullwidth {:on-click #(close-survey s)} "Close survey"]
      (when (not-empty status)
@@ -202,7 +217,7 @@
         [:div.panel
          (concat
            (for [score columns]
-             [:p {:class (str "score" (when (meds score) (str " s" score)))} score])
+             [:p {:class (str "score" (when (meds score) (str " s" (dec score))))} score])
            (for [score columns]
              [:div
               (for [user (sort-users (get scores score))]

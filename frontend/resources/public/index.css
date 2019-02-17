@@ -129,7 +129,7 @@ div.center {
   font-size: smaller;
 }
 
-.progress {
+.narrow {
   width: 25em;
   margin: auto;
 }
@@ -161,12 +161,12 @@ p.label {
 }
 
 .user {
-  border: 1px solid hsl(215, 80%, 60%);
   border-radius: 50vh;
-  padding: .3em .5em;
-  margin: .2em;
+  border: 1px solid hsl(215, 80%, 60%);
   color: hsl(215, 80%, 60%);
   display: inline-block;
+  margin: .2em;
+  padding: .3em .5em;
 }
 
 p.comment {
