@@ -171,5 +171,5 @@ p.label {
 
 p.comment {
   color: hsl(215, 80%, 60%);
-  margin: 0.6em;
+  margin: 0.6em 0;
 }

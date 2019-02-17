@@ -155,6 +155,9 @@
 
 (declare survey-path)
 
+(defn sort-users [users]
+  (sort-by #(.toLowerCase (:user-name %)) users))
+
 (defn admin-progress [s]
   (let [{:keys [status survey-id]} (:admin s)]
     [:div.progress
@@ -172,7 +175,7 @@
         [:h2 "Respondents"]
         [:table.respondents
          [:tbody
-          (for [respondent (sort-by #(.toLowerCase (:user-name %)) status)]
+          (for [respondent (sort-users status)]
             ^{:key (:user-name respondent)}
             [:tr
              [:td (:user-name respondent)]
@@ -202,13 +205,13 @@
              [:p {:class (str "score" (when (meds score) (str " s" score)))} score])
            (for [score columns]
              [:div
-              (for [user (get scores score)]
+              (for [user (sort-users (get scores score))]
                 [:div.user (:user-name user) " "])])
            (for [option (:options dimension)]
              [:div
               [:p.description (:description option)]
               (for [{:keys [user-name comment]}
-                    (get scores (:score option))
+                    (sort-users (get scores (:score option)))
                     :when (seq comment)]
                 [:p.comment [:strong user-name] " " comment])]))]]))])
 
