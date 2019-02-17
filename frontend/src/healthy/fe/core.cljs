@@ -58,17 +58,18 @@
           (get-in s [:survey :template :title])
           " – "
           (:name ((get-in s [:survey :template :dimensions]) (:dimension s))))]
-   [:div#panel
+   [:div.panel
     (concat (for [index (range 5)]
-              ^{:key index} [:p
-                             {:class (str "score" (when (or (not (:selected s)) (= (:selected s) index)) (str " s" index)))
-                              :on-click (make-select s index)} (inc index)])
+              ^{:key index}
+              [:p
+               {:class (str "score clickable" (when (or (not (:selected s)) (= (:selected s) index)) (str " s" index)))
+                :on-click (make-select s index)} (inc index)])
             (for [index (range 5)]
               (let [dimension ((get-in s [:survey :template :dimensions]) (:dimension s))
                     option ((:options dimension) index)]
                 ^{:key (+ index 10)}
                 [:div
-                 [:p.description
+                 [:p.description.clickable
                   {:on-click (make-select s index)}
                   (:description option)]
                  (when (= index (:selected s))
@@ -177,9 +178,37 @@
              [:td (:user-name respondent)]
              [:td (if (:finished? respondent) "finished 🏁" "started ⌛")]])]]])]))
 
+(defn medians [scores]
+  (let [sorted (->> scores (map (fn [[k v]] (repeat (count v) k))) flatten sort)
+        len (count sorted)
+        middle (quot len 2)
+        middle-1 (dec middle)]
+    (if (odd? len)
+      #{(nth sorted middle)}
+      #{(nth sorted middle) (nth sorted middle-1)})))
+
+(defn admin-results [s]
+  [:div
+   (for [dimension (-> s :admin :template :dimensions)]
+     (let [columns (->> dimension :options count inc (range 1) vec)
+           scores (get (-> s :admin :grades) (:dimension-id dimension))
+           meds (medians scores)]
+       [:div
+        [:h2 (:name dimension)]
+        [:div.panel
+         (concat
+           (for [score columns]
+             [:p {:class (str "score" (when (meds score) (str " s" score)))} score])
+           (for [score columns]
+             [:div
+              (for [user (get scores score)]
+                [:div.user (:user-name user) " "])])
+           (for [option (:options dimension)]
+             [:p.description (:description option)]))]]))])
+
 (defn admin [s]
   (if (get-in s [:admin :ended?])
-    nil
+    (admin-results s)
     (admin-progress s)))
 
 (defn loading-display []
