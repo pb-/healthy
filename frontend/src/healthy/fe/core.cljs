@@ -4,12 +4,30 @@
             [secretary.core :as secretary :refer-macros [defroute]]
             [cljs.core.async :refer [<!]]
             [cljs-http.client :as http]
-            [goog.functions :refer [debounce]]))
+            [goog.functions :refer [debounce]]
+            [goog.events :as events])
+  (:import [goog.history Html5History EventType]))
 
 (declare admin-path survey-path)
 (def endpoint (str js/document.location.protocol "//" js/document.location.hostname ":8080"))
 (def address (str js/document.location.protocol "//" js/document.location.host "/"))
 (defonce state (r/atom {:loading true}))
+
+(defn make-history []
+  (doto (Html5History.)
+    (.setPathPrefix address)
+    (.setUseFragment false)))
+
+(defn handle-location-change []
+  (secretary/dispatch! (subs js/location.hash 1)))
+
+(defonce history
+  (doto (make-history)
+    (events/listen EventType.NAVIGATE #(handle-location-change))
+    (.setEnabled true)))
+
+(defn nav! [location]
+  (.setToken history location))
 
 (secretary/set-config! :prefix "#")
 
@@ -29,7 +47,7 @@
                                                   :admin-id admin-id
                                                   :template-id "8H1GxragdS"}}))]
       (if (= (:status response) 201)
-        (secretary/dispatch! (admin-path {:id admin-id}))
+        (nav! (admin-path {:id admin-id}))
         (swap! state assoc :error? true)))))
 
 (defn home []
@@ -167,7 +185,7 @@
                                      :edn-params {:type :survey-ended
                                                   :admin-id (:admin-id s)}}))]
       (if (= (:status response) 201)
-        (secretary/dispatch! (admin-path {:id (:admin-id s)}))
+        (nav! (admin-path {:id (:admin-id s)}))
         (swap! state assoc :error? true)))))
 
 (defn sort-users [users]
@@ -290,10 +308,7 @@
 (defn main []
   (r/render [root] (.getElementById js/document "app")))
 
-(set! (.-onhashchange js/window)
-      (fn [_] (secretary/dispatch! (subs js/location.hash 1))))
-
 (when (:loading @state)
- (secretary/dispatch! (subs js/location.hash 1)))
+ (handle-location-change))
 
 (main)
