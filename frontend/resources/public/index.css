@@ -173,3 +173,13 @@ p.comment {
   color: hsl(215, 80%, 60%);
   margin: 0.6em 0;
 }
+
+.summary {
+  border-spacing: .5em;
+}
+
+.bar {
+  display: inline-block;
+  padding: .2em;
+  text-align: right;
+}

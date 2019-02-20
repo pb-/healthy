@@ -214,8 +214,11 @@
              [:td (:user-name respondent)]
              [:td (if (:finished? respondent) "finished 🏁" "started ⌛")]])]]])]))
 
+(defn flat-scores [scores]
+  (->> scores (map (fn [[k v]] (repeat (count v) k))) flatten))
+
 (defn medians [scores]
-  (let [sorted (->> scores (map (fn [[k v]] (repeat (count v) k))) flatten sort)
+  (let [sorted (sort (flat-scores scores))
         len (count sorted)
         middle (quot len 2)
         middle-1 (dec middle)]
@@ -224,8 +227,33 @@
       (odd? len) #{(nth sorted middle)}
       :else #{(nth sorted middle) (nth sorted middle-1)})))
 
-(defn admin-results [s]
+(defn round-score [x]
+  (/ (js/Math.round (* 10 x)) 10))
+
+(defn average [scores]
+  (let [flat (flat-scores scores)]
+    (/ (reduce + flat) (count flat))))
+
+(defn admin-results-summary [s]
+  [:div.narrow
+   [:h1 "Summary"]
+   [:table.summary
+    [:tbody
+     (for [dimension (-> s :admin :template :dimensions)]
+       (let [scores (get (-> s :admin :grades) (:dimension-id dimension))]
+         [:tr
+          [:td (:name dimension)]
+          [:td (let [score (round-score (average scores))
+                     hue (* 30 (- score 1))]
+                 [:span.bar
+                  {:style {:width (str(* 2 score) "em")
+                           :color (str "hsl(" hue ", 80%, 30%)")
+                           :background-color (str "hsl(" hue ", 80%, 80%)")}}
+                  score])]]))]]])
+
+(defn admin-results-detail [s]
   [:div
+   [:h1 "Detailed results"]
    (for [dimension (-> s :admin :template :dimensions)]
      (let [columns (->> dimension :options count inc (range 1) vec)
            scores (get (-> s :admin :grades) (:dimension-id dimension))
@@ -247,6 +275,11 @@
                     (sort-users (get scores (:score option)))
                     :when (seq comment)]
                 [:p.comment [:strong user-name] " " comment])]))]]))])
+
+(defn admin-results [s]
+  [:div
+   (admin-results-summary s)
+   (admin-results-detail s)])
 
 (defn admin [s]
   (if (get-in s [:admin :ended?])
