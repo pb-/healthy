@@ -234,22 +234,31 @@
   (let [flat (flat-scores scores)]
     (/ (reduce + flat) (count flat))))
 
+(defn summary-table [rows]
+  [:table.summary
+   [:tbody
+    (for [row rows]
+      [:tr
+       [:td (:label row)]
+       [:td (let [score (:score row)
+                  hue (* 30 (- score 1))]
+              [:span.bar
+               {:style {:width (str(* 2 score) "em")
+                        :color (str "hsl(" hue ", 80%, 30%)")
+                        :background-color (str "hsl(" hue ", 80%, 80%)")}}
+               score])]])]])
+
 (defn admin-results-summary [s]
   [:div.narrow
    [:h1 "Summary"]
-   [:table.summary
-    [:tbody
-     (for [dimension (-> s :admin :template :dimensions)]
-       (let [scores (get (-> s :admin :grades) (:dimension-id dimension))]
-         [:tr
-          [:td (:name dimension)]
-          [:td (let [score (round-score (average scores))
-                     hue (* 30 (- score 1))]
-                 [:span.bar
-                  {:style {:width (str(* 2 score) "em")
-                           :color (str "hsl(" hue ", 80%, 30%)")
-                           :background-color (str "hsl(" hue ", 80%, 80%)")}}
-                  score])]]))]]])
+   (summary-table
+     (map
+       (fn [dimension]
+         {:label (:name dimension)
+          :score (-> (get (-> s :admin :grades) (:dimension-id dimension))
+                     average
+                     round-score)})
+       (-> s :admin :template :dimensions)))])
 
 (defn admin-results-detail [s]
   [:div
