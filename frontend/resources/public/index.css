@@ -111,9 +111,12 @@ textarea.comment {
   cursor: pointer;
 }
 
+.center {
+  text-align: center;
+}
+
 div.center {
   margin-top: 30vh;
-  text-align: center;
 }
 
 .emoji {

@@ -278,6 +278,9 @@
 (defn admin-results-detail [s]
   [:div
    [:h1 "Detailed results"]
+   [:p.center
+    [:a {:href (str endpoint "/api/query/admin/" (:admin-id s) "/csv")} "Download results"]
+    " as CSV (without comments)"]
    (for [dimension (-> s :admin :template :dimensions)]
      (let [columns (->> dimension :options count inc (range 1) vec)
            scores (get (-> s :admin :grades) (:dimension-id dimension))
