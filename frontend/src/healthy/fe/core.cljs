@@ -234,31 +234,46 @@
   (let [flat (flat-scores scores)]
     (/ (reduce + flat) (count flat))))
 
-(defn summary-table [rows]
-  [:table.summary
-   [:tbody
-    (for [row rows]
-      [:tr
-       [:td (:label row)]
-       [:td (let [score (:score row)
-                  hue (* 30 (- score 1))]
-              [:span.bar
-               {:style {:width (str(* 2 score) "em")
-                        :color (str "hsl(" hue ", 80%, 30%)")
-                        :background-color (str "hsl(" hue ", 80%, 80%)")}}
-               score])]])]])
+(defn user-averages [grades]
+  (->> grades
+       vals
+       (map vals)
+       flatten
+       (group-by :user-name)
+       (map (fn [[k v]] {:user-name k
+                         :score (round-score (/ (reduce + (map :score v)) (count v)))}))
+       sort-users))
+
+(defn summary-table [title rows & [labelfn]]
+  [:div
+   [:h2 title]
+   [:table.summary
+    [:tbody
+     (for [row rows]
+       [:tr
+        [:td ((or labelfn :label) row)]
+        [:td (let [score (:score row)
+                   hue (* 30 (- score 1))]
+               [:span.bar
+                {:style {:width (str(* 2 score) "em")
+                         :color (str "hsl(" hue ", 80%, 30%)")
+                         :background-color (str "hsl(" hue ", 80%, 80%)")}}
+                score])]])]]])
 
 (defn admin-results-summary [s]
-  [:div.narrow
+  [:div
    [:h1 "Summary"]
-   (summary-table
-     (map
-       (fn [dimension]
-         {:label (:name dimension)
-          :score (-> (get (-> s :admin :grades) (:dimension-id dimension))
-                     average
-                     round-score)})
-       (-> s :admin :template :dimensions)))])
+   [:div.summaries
+    (summary-table
+      "by dimension"
+      (map
+        (fn [dimension]
+          {:label (:name dimension)
+           :score (-> (get (-> s :admin :grades) (:dimension-id dimension))
+                      average
+                      round-score)})
+        (-> s :admin :template :dimensions)))
+    (summary-table "by participant" (user-averages (-> s :admin :grades)) :user-name)]])
 
 (defn admin-results-detail [s]
   [:div

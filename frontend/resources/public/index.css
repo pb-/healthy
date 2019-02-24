@@ -183,3 +183,16 @@ p.comment {
   padding: .2em;
   text-align: right;
 }
+
+.summaries {
+  display: flex;
+  justify-content: center;
+}
+
+.summaries h2 {
+  text-align: initial;
+}
+
+.summaries div {
+  margin: 0 5em;
+}
