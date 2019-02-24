@@ -265,7 +265,7 @@
    [:h1 "Summary"]
    [:div.summaries
     (summary-table
-      "by dimension"
+      "dimension average"
       (map
         (fn [dimension]
           {:label (:name dimension)
@@ -273,7 +273,7 @@
                       average
                       round-score)})
         (-> s :admin :template :dimensions)))
-    (summary-table "by participant" (user-averages (-> s :admin :grades)) :user-name)]])
+    (summary-table "participant average" (user-averages (-> s :admin :grades)) :user-name)]])
 
 (defn admin-results-detail [s]
   [:div
