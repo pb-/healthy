@@ -70,6 +70,13 @@
     (respond-ok survey)
     (route/not-found "not found")))
 
+(defn handle-csv [request]
+  (if-let [csv (state/export (:state request) (get-in request [:params :admin-id]))]
+    {:status 200
+     :headers (assoc headers "Content-Type" "text/csv")
+     :body (str (state/edn->csv csv) "\n")}
+    (route/not-found "not found")))
+
 (defn handle-survey [request]
   (if-let [survey (state/get-survey (:state request) (get-in request [:params :survey-id]))]
     (respond-ok survey)
@@ -93,6 +100,7 @@
 (defroutes routes
   (context "/api" []
            (context "/query" []
+                    (GET "/admin/:admin-id/csv" [admin-id] handle-csv)
                     (GET "/admin/:admin-id" [admin-id] handle-admin)
                     (GET "/survey/:survey-id" [survey-id] handle-survey)
                     (GET "/survey/:survey-id/user/:user-name" [survey-id user-name] handle-check-user)

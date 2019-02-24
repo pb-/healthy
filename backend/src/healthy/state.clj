@@ -1,6 +1,7 @@
 (ns healthy.state
   [:require
-   [clojure.set :as s]])
+   [clojure.set :as s]
+   [clojure.string :refer [join]]])
 
 (def initial
   {:surveys []
@@ -29,6 +30,9 @@
   (->> user-name
        .trim
        .toLowerCase))
+
+(defn edn->csv [edn]
+  (join "\n" (map (partial join ",") edn)))
 
 ; will need some abstraction here
 (defn find-user-id [state id]
@@ -84,6 +88,25 @@
                     (map (fn [[user-id grade]]
                            (assoc grade :user-name (:user-name (find-user-id state user-id))))
                          users))])))
+
+(defn export [state admin-id]
+  (let [survey (find-admin-id state admin-id)
+        template (find-template-id state (:template-id survey))
+        dimensions (->> template :dimensions (map #(select-keys % [:dimension-id :name])))
+        users (map (partial find-user-id state) (survey-user-ids survey))]
+    (when (:ended? survey)
+      (vec
+        (concat
+          [(into ["Participant"] (map :name dimensions))]
+          (mapv
+            (fn [user]
+              (into
+                [(:user-name user)]
+                (map #(get-in
+                        (:grades survey)
+                        [(:dimension-id %) (:user-id user) :score])
+                     dimensions)))
+            users))))))
 
 (defn get-admin [state admin-id]
   (if-let [survey (find-admin-id state admin-id)]
