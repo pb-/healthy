@@ -250,15 +250,17 @@
    [:table.summary
     [:tbody
      (for [row rows]
-       [:tr
-        [:td ((or labelfn :label) row)]
-        [:td (let [score (:score row)
-                   hue (* 30 (- score 1))]
-               [:span.bar
-                {:style {:width (str(* 2 score) "em")
-                         :color (str "hsl(" hue ", 80%, 30%)")
-                         :background-color (str "hsl(" hue ", 80%, 80%)")}}
-                score])]])]]])
+       (let [label ((or labelfn :label) row)]
+         ^{:key label}
+         [:tr
+          [:td label]
+          [:td (let [score (:score row)
+                     hue (* 30 (- score 1))]
+                 [:span.bar
+                  {:style {:width (str(* 2 score) "em")
+                           :color (str "hsl(" hue ", 80%, 30%)")
+                           :background-color (str "hsl(" hue ", 80%, 80%)")}}
+                  score])]]))]]])
 
 (defn admin-results-summary [s]
   [:div
@@ -285,22 +287,28 @@
      (let [columns (->> dimension :options count inc (range 1) vec)
            scores (get (-> s :admin :grades) (:dimension-id dimension))
            meds (medians scores)]
+       ^{:key (:dimension-id dimension)}
        [:div
         [:h2 (:name dimension)]
         [:div.panel
          (concat
            (for [score columns]
+             ^{:key (str "s" score)}
              [:p {:class (str "score" (when (meds score) (str " s" (dec score))))} score])
            (for [score columns]
+             ^{:key (str "u" score)}
              [:div
               (for [user (sort-users (get scores score))]
+                ^{:key (:user-name user)}
                 [:div.user (:user-name user) " "])])
            (for [option (:options dimension)]
+             ^{:key (str "c" (:option-id option))}
              [:div
               [:p.description (:description option)]
               (for [{:keys [user-name comment]}
                     (sort-users (get scores (:score option)))
                     :when (seq comment)]
+                ^{:key user-name}
                 [:p.comment [:strong user-name] " " comment])]))]]))])
 
 (defn admin-results [s]
