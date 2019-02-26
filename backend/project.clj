@@ -8,4 +8,5 @@
                  [compojure "1.6.1"]
                  [fogus/ring-edn "0.3.0"]
                  [org.clojure/spec.alpha "0.2.176"]]
-  :main healthy.core)
+  :main healthy.core
+  :aot [healthy.core])

@@ -1,4 +1,5 @@
 (ns healthy.core
+  (:gen-class)
   [:require
    [org.httpkit.server :as kit]
    [clojure.string :refer [join]]
