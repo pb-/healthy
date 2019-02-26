@@ -41,8 +41,8 @@
    "Access-Control-Allow-Origin" "*"
    "Access-Control-Allow-Headers" "Content-Type"})
 
-(defn load-state []
-  (with-open [reader (clojure.java.io/reader storage-file)]
+(defn load-state [file]
+  (with-open [reader (clojure.java.io/reader file)]
     (reduce state/update-state state/initial (map edn/read-string (line-seq reader)))))
 
 (defn store-event! [event]
@@ -51,7 +51,11 @@
 
 (defn wrap-state [handler]
   (fn [request]
-    (handler (assoc request :state (load-state)))))
+    (handler (assoc request :state (load-state (:storage-file request))))))
+
+(defn wrap-storage [handler file]
+  (fn [request]
+    (handler (assoc request :storage-file file))))
 
 (defn respond-ok [data]
   {:status 200
@@ -124,6 +128,6 @@
     (reset! server nil)))
 
 (defn -main [& args]
-  (reset! server (kit/run-server app {:port 8080})))
+  (reset! server (kit/run-server (wrap-storage app storage-file) {:port 8080})))
 
 (comment (-main))
