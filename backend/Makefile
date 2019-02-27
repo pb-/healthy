@@ -5,3 +5,7 @@ run:
 build:
 	lein uberjar
 .PHONY: build
+
+image:
+	docker build -t healthy .
+.PHONY: image
