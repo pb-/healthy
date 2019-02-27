@@ -1,5 +1,5 @@
 run:
-	lein repl
+	HEALTHY_STORAGE=events.edn HEALTHY_PORT=8080 lein repl
 .PHONY: run
 
 build:

@@ -127,7 +127,13 @@
     (@server :timeout 100)
     (reset! server nil)))
 
+(defn require-env [varname]
+  (or (not-empty (System/getenv varname))
+      (throw (IllegalArgumentException. (str varname " is required")))))
+
 (defn -main [& args]
-  (reset! server (kit/run-server (wrap-storage app storage-file) {:port 8080})))
+  (reset! server (kit/run-server
+                   (wrap-storage app (require-env "HEALTHY_STORAGE"))
+                   {:port (Integer. (require-env "HEALTHY_PORT"))})))
 
 (comment (-main))
