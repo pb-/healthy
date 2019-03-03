@@ -42,8 +42,10 @@
    "Access-Control-Allow-Headers" "Content-Type"})
 
 (defn load-state [file]
-  (with-open [reader (clojure.java.io/reader file)]
-    (reduce state/update-state state/initial (map edn/read-string (line-seq reader)))))
+  (try
+    (with-open [reader (clojure.java.io/reader file)]
+      (reduce state/update-state state/initial (map edn/read-string (line-seq reader))))
+    (catch java.io.FileNotFoundException _ state/initial)))
 
 (defn store-event! [event]
   (spit storage-file
@@ -132,8 +134,8 @@
       (throw (IllegalArgumentException. (str varname " is required")))))
 
 (defn -main [& args]
-  (reset! server (kit/run-server
-                   (wrap-storage app (require-env "HEALTHY_STORAGE"))
-                   {:port (Integer. (require-env "HEALTHY_PORT"))})))
-
-(comment (-main))
+  (do
+    (reset! server (kit/run-server
+                     (wrap-storage app (require-env "HEALTHY_STORAGE"))
+                     {:port (Integer. (require-env "HEALTHY_PORT"))}))
+    (println "server is ready")))
