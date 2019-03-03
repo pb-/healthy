@@ -5,11 +5,15 @@
             [cljs.core.async :refer [<!]]
             [cljs-http.client :as http]
             [goog.functions :refer [debounce]]
-            [goog.events :as events])
+            [goog.events :as events]
+            [goog :refer [DEBUG]])
   (:import [goog.history Html5History EventType]))
 
 (declare admin-path survey-path)
-(def endpoint (str js/document.location.protocol "//" js/document.location.hostname ":8080"))
+(def endpoint (str js/document.location.protocol "//"
+                   (if ^boolean DEBUG
+                     (str js/document.location.hostname ":8080")
+                     js/document.location.host)))
 (def address (str js/document.location.protocol "//" js/document.location.host "/"))
 (defonce state (r/atom {:loading true}))
 
