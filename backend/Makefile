@@ -1,6 +1,6 @@
-run:
+develop:
 	HEALTHY_STORAGE=events.edn HEALTHY_PORT=8080 lein repl
-.PHONY: run
+.PHONY: develop
 
 build:
 	lein uberjar

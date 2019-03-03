@@ -1,6 +1,6 @@
-run:
+develop:
 	clojure -A:fig:build
-.PHONY: run
+.PHONY: develop
 
 image:
 	docker build -t healthy-fe .
