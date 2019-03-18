@@ -34,8 +34,6 @@
 (s/def ::comment string?)
 (s/def ::event (s/multi-spec event-type :type))
 
-(def storage-file "events.edn")
-
 (def headers
   {"Content-Type" "application/edn" 
    "Access-Control-Allow-Origin" "*"
@@ -47,8 +45,8 @@
       (reduce state/update-state state/initial (map edn/read-string (line-seq reader))))
     (catch java.io.FileNotFoundException _ state/initial)))
 
-(defn store-event! [event]
-  (spit storage-file
+(defn store-event! [file event]
+  (spit file
         (str (pr-str (assoc event :time (java.util.Date.))) \newline) :append true))
 
 (defn wrap-state [handler]
@@ -101,7 +99,7 @@
     (if (s/valid? ::event event)
       (if-let [error (state/error (:state request) event)]
         (respond-error error)
-        (do (store-event! event) {:status 201 :headers headers}))
+        (do (store-event! (:storage-file request) event) {:status 201 :headers headers}))
       (respond-error (s/explain-str ::event event)))))
 
 (defroutes routes
