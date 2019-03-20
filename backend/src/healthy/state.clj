@@ -93,7 +93,7 @@
   (let [survey (find-admin-id state admin-id)
         template (find-template-id state (:template-id survey))
         dimensions (->> template :dimensions (map #(select-keys % [:dimension-id :name])))
-        users (map (partial find-user-id state) (survey-user-ids survey))]
+        users (map (partial find-user-id state) (set (survey-user-ids survey)))]
     (when (:ended? survey)
       (vec
         (concat
